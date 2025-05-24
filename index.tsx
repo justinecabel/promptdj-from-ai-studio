@@ -9,7 +9,7 @@ import {customElement, property, query, state} from 'lit/decorators.js';
 import {classMap} from 'lit/directives/class-map.js';
 import {styleMap} from 'lit/directives/style-map.js';
 
-import { Analytics } from '@vercel/analytics/react';
+
 
 import {
   GoogleGenAI,
@@ -1667,6 +1667,25 @@ class PromptDj extends LitElement {
   override async firstUpdated() {
     await this.connectToSession();
     this.setSessionPrompts();
+
+    // Programmatically add Vercel Web Analytics and Speed Insights scripts
+    // Vercel Web Analytics (for window.va)
+    if (!document.head.querySelector('script[data-vercel-va-init]')) { // Check to prevent multiple additions
+      const vaScript = document.createElement('script');
+      vaScript.setAttribute('data-vercel-va-init', 'true'); // Mark as initialized
+      vaScript.text = `window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };`;
+      document.head.appendChild(vaScript);
+    }
+
+    // Vercel Speed Insights
+    // Check if a script with this specific src already exists in head or body
+    if (!document.querySelector('script[src="/_vercel/insights/script.js"]')) {
+      const insightsScript = document.createElement('script');
+      insightsScript.defer = true;
+      insightsScript.src = '/_vercel/insights/script.js';
+      // Vercel docs often show this in body, but head with defer is also fine.
+      document.body.appendChild(insightsScript); // Or document.head.appendChild(insightsScript);
+    }
   }
 
   private async connectToSession() {
@@ -1988,7 +2007,7 @@ class PromptDj extends LitElement {
         <a class="ai-studio-credit" href="https://aistudio.google.com/apps/bundled/promptdj?showPreview=true" target="_blank" rel="noopener noreferrer">
           From Google AI Studio
         </a>
-        <Analytics />
+        
       </div>
       <toast-message></toast-message>
       `;
