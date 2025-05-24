@@ -9,8 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "lit": "^3.3.0",
-    "@google/genai": "^1.0.0"
+    "@google/genai": "^1.0.0",
+    "@vercel/analytics": "^1.5.0",
+    "lit": "^3.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

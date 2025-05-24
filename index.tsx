@@ -9,6 +9,8 @@ import {customElement, property, query, state} from 'lit/decorators.js';
 import {classMap} from 'lit/directives/class-map.js';
 import {styleMap} from 'lit/directives/style-map.js';
 
+import { Analytics } from '@vercel/analytics/react';
+
 import {
   GoogleGenAI,
   type LiveMusicGenerationConfig,
@@ -1986,6 +1988,7 @@ class PromptDj extends LitElement {
         <a class="ai-studio-credit" href="https://aistudio.google.com/apps/bundled/promptdj?showPreview=true" target="_blank" rel="noopener noreferrer">
           From Google AI Studio
         </a>
+        <Analytics />
       </div>
       <toast-message></toast-message>
       `;
