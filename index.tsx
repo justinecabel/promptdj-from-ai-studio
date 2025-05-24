@@ -109,6 +109,7 @@ class WeightSlider extends LitElement {
     }
     .value-display {
       font-size: 1.3vmin;
+      font-family: inherit; /* Inherit sans-serif font from host */
       color: #ccc;
       margin: 0.5vmin 0;
       user-select: none;
@@ -116,18 +117,22 @@ class WeightSlider extends LitElement {
     }
     .slider-container {
       position: relative;
-      width: 10px;
+      width: 12px; /* Slightly wider for a more substantial feel */
       height: 100%;
-      background-color: #0009;
-      border-radius: 4px;
+      background-color: rgba(255,255,255,0.1); /* Light track on dark bg, MD3 style */
+      border-radius: 8px; /* More expressive */
     }
     #thumb {
       position: absolute;
       bottom: 0;
       left: 0;
       width: 100%;
-      border-radius: 4px;
-      box-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
+      border-radius: 8px; /* Match track rounding */
+      /* backgroundColor is set via styleMap */
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); /* Softer base shadow */
+      /* "Wiggly" inspired transition for a bouncy feel */
+      transition: height 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.3s ease;
     }
   `;
 
@@ -136,6 +141,7 @@ class WeightSlider extends LitElement {
 
   @query('.scroll-container') private scrollContainer!: HTMLDivElement;
 
+  @state() private isDragging = false;
   private dragStartPos = 0;
   private dragStartValue = 0;
   private containerBounds: DOMRect | null = null;
@@ -154,6 +160,8 @@ class WeightSlider extends LitElement {
     this.dragStartPos = e.clientY;
     this.dragStartValue = this.value;
     document.body.classList.add('dragging');
+    this.isDragging = true;
+    this.setAttribute('is-dragging', ''); // Set attribute for styling
     window.addEventListener('pointermove', this.handlePointerMove);
     window.addEventListener('touchmove', this.handleTouchMove, {
       passive: false,
@@ -173,7 +181,10 @@ class WeightSlider extends LitElement {
 
   private handlePointerUp(e: PointerEvent) {
     window.removeEventListener('pointermove', this.handlePointerMove);
+    window.removeEventListener('touchmove', this.handleTouchMove); // Ensure touchmove is also removed
     document.body.classList.remove('dragging');
+    this.isDragging = false;
+    this.removeAttribute('is-dragging'); // Remove attribute
     this.containerBounds = null;
   }
 
@@ -209,12 +220,37 @@ class WeightSlider extends LitElement {
     const thumbStyle = styleMap({
       height: `${thumbHeightPercent}%`,
       backgroundColor: this.color,
-      // Hide thumb if value is 0 or very close to prevent visual glitch
       display: this.value > 0.01 ? 'block' : 'none',
     });
     const displayValue = this.value.toFixed(2);
 
     return html`
+      <style>
+        /* Dynamic hover/active styles for the thumb */
+        :host(:hover) #thumb {
+          box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 8px 2px ${this.color}66; /* Glow with thumb color */
+        }
+        :host([is-dragging]) #thumb {
+          box-shadow: 0 3px 8px rgba(0,0,0,0.6), 0 0 12px 4px ${this.color}99; /* Stronger glow */
+        }
+
+        @media (max-width: 600px) and (orientation: portrait) {
+          :host {
+            padding: 3px; /* Reduced padding */
+          }
+          .value-display {
+            font-size: clamp(10px, 2vmin, 12px); /* Smaller font */
+            margin: 0.3vmin 0;
+          }
+          .slider-container {
+            width: 10px; /* Narrower slider track */
+            border-radius: 6px;
+          }
+          #thumb {
+            border-radius: 6px;
+          }
+        }
+      </style>
       <div
         class="scroll-container"
         @pointerdown=${this.handlePointerDown}
@@ -275,17 +311,15 @@ class IconButton extends LitElement {
         width="96"
         height="96"
         rx="48"
-        fill="black"
-        fill-opacity="0.05" />
+        fill="rgba(0, 0, 0, 0.2)" />  <!-- Slightly darker background -->
       <rect
         x="23.5"
         y="7.5"
         width="93"
         height="93"
         rx="46.5"
-        stroke="black"
-        stroke-opacity="0.3"
-        stroke-width="3" />
+        stroke="rgba(255,255,255,0.2)"
+        stroke-width="1.5" />
       <g filter="url(#filter0_ddi_1048_7373)">
         <rect
           x="25"
@@ -293,9 +327,9 @@ class IconButton extends LitElement {
           width="90"
           height="90"
           rx="45"
-          fill="white"
-          fill-opacity="0.05"
-          shape-rendering="crispEdges" />
+          fill="rgba(100, 100, 100, 0.8)"
+          shape-rendering="crispEdges"
+        />  <!-- Darker surface -->
       </g>
       ${this.renderIcon()}
       <defs>
@@ -353,7 +387,7 @@ class IconButton extends LitElement {
           <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
           <feColorMatrix
             type="matrix"
-            values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0" />
+            values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.1 0" /> <!-- Slightly stronger inner shadow -->
           <feBlend
             mode="normal"
             in2="shape"
@@ -466,10 +500,11 @@ class ToastMessage extends LitElement {
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background-color: #000;
+      background-color: rgba(25, 25, 25, 0.75); /* More translucent dark */
+      backdrop-filter: blur(15px); /* Increased blur */
       color: white;
       padding: 15px;
-      border-radius: 5px;
+      border-radius: 12px; /* More expressive */
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -478,6 +513,7 @@ class ToastMessage extends LitElement {
       max-width: 80vw;
       transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
       z-index: 11;
+      border: 1px solid rgba(255, 255, 255, 0.12); /* Slightly more visible border */
     }
     button {
       border-radius: 100px;
@@ -525,11 +561,15 @@ class PromptController extends LitElement {
       align-items: center;
       box-sizing: border-box;
       overflow: hidden;
-      background-color: #2a2a2a;
-      border-radius: 5px;
+      background-color: rgba(60, 60, 60, 0.65); /* Slightly darker & more opaque */
+      backdrop-filter: blur(20px); /* More pronounced blur */
+      border-radius: 20px; /* Increased rounding */
+      border: 1px solid rgba(255, 255, 255, 0.15); /* More visible border */
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); /* Enhanced shadow */
     }
     .remove-button {
       position: absolute;
+      /* Slightly adjusted positioning */
       top: 1.2vmin;
       left: 1.2vmin;
       background: #666;
@@ -537,7 +577,7 @@ class PromptController extends LitElement {
       border: none;
       border-radius: 50%;
       width: 2.8vmin;
-      height: 2.8vmin;
+      height: 2.8vmin; 
       font-size: 1.8vmin;
       display: flex;
       align-items: center;
@@ -604,6 +644,35 @@ class PromptController extends LitElement {
     }
     :host([filtered='true']) #text {
       background: #da2000;
+    }
+
+    @media (max-width: 600px) and (orientation: portrait) {
+      .prompt {
+        border-radius: 12px; /* Reduced rounding */
+      }
+      .remove-button {
+        /* Ensure touch target is adequate */
+        width: clamp(24px, 5vmin, 30px);
+        height: clamp(24px, 5vmin, 30px);
+        font-size: clamp(14px, 3vmin, 18px);
+        line-height: clamp(24px, 5vmin, 30px); /* Center the 'x' */
+        top: 0.8vmin;
+        left: 0.8vmin;
+      }
+      weight-slider {
+        max-height: calc(100% - 10.5vmin); /* Parent height - (new controls height + new controls margin-bottom) */
+        margin: 1vmin 0 0.5vmin; /* New margins for weight-slider itself */
+      }
+      .controls {
+        height: 10vmin; /* Adjusted for text readability */
+        padding: 0 0.3vmin;
+        margin-bottom: 0.5vmin;
+        gap: 0.1vmin;
+      }
+      #text {
+        font-size: clamp(12px, 2.2vmin, 14px); /* Adjusted for readability */
+        padding: 0.3vmin;
+      }
     }
   `;
 
@@ -696,16 +765,21 @@ class SettingsController extends LitElement {
     :host {
       display: block;
       padding: 2vmin;
-      background-color: #2a2a2a;
+      background-color: rgba(60, 60, 60, 0.65);
+      backdrop-filter: blur(20px);
       color: #eee;
       box-sizing: border-box;
-      border-radius: 5px;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
       font-family: 'Google Sans', sans-serif;
+      border: 1px solid rgba(255, 255, 255, 0.12); /* Slightly more visible border */
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25); /* Slightly stronger shadow */
       font-size: 1.5vmin;
-      overflow-y: auto;
+      /* font-size: clamp(13px, 1.5vmin, 16px); /* Base font size for context */
+      overflow-y: auto; /* Keep this for content scroll */
       scrollbar-width: thin;
       scrollbar-color: #666 #1a1a1a;
-      transition: width 0.3s ease-out max-height 0.3s ease-out;
+      transition: width 0.3s ease-out, max-height 0.3s ease-out;
     }
     :host([showadvanced]) {
       max-height: 40vmin;
@@ -742,20 +816,20 @@ class SettingsController extends LitElement {
       text-align: right;
     }
     input[type='range'] {
-      --track-height: 8px;
-      --track-bg: #0009;
-      --track-border-radius: 4px;
-      --thumb-size: 16px;
+      --track-bg: rgba(255,255,255,0.2); /* Lighter inactive track for contrast */
+      --track-border-radius: 6px; /* Pill shape for fatter track */
+      --thumb-size: 24px; /* Made thumb larger/fatter */
       --thumb-bg: #5200ff;
-      --thumb-border-radius: 50%;
-      --thumb-box-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
+      --thumb-border-radius: 8px; /* Rounded rectangle, no longer a circle */
+      --thumb-box-shadow: 0 1px 3px rgba(0,0,0,0.4); /* Softer shadow */
       --value-percent: 0%;
       -webkit-appearance: none;
       appearance: none;
       width: 100%;
-      height: var(--track-height);
+      height: var(--thumb-size); /* Ensure space for thumb interaction */
       background: transparent;
       cursor: pointer;
+      outline: none; /* Remove default outline */
       margin: 0.5vmin 0;
       border: none;
       padding: 0;
@@ -772,6 +846,7 @@ class SettingsController extends LitElement {
         var(--track-bg) var(--value-percent)
       );
       border-radius: var(--track-border-radius);
+      transition: background-color 0.2s ease;
     }
     input[type='range']::-moz-range-track {
       width: 100%;
@@ -780,6 +855,12 @@ class SettingsController extends LitElement {
       background: var(--track-bg);
       border-radius: var(--track-border-radius);
       border: none;
+    }
+    /* Firefox progress part */
+    input[type='range']::-moz-range-progress {
+        background-color: var(--thumb-bg);
+        height: var(--track-height);
+        border-radius: var(--track-border-radius);
     }
     input[type='range']::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -791,6 +872,8 @@ class SettingsController extends LitElement {
       box-shadow: var(--thumb-box-shadow);
       cursor: pointer;
       margin-top: calc((var(--thumb-size) - var(--track-height)) / -2);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
     input[type='range']::-moz-range-thumb {
       height: var(--thumb-size);
@@ -800,43 +883,86 @@ class SettingsController extends LitElement {
       box-shadow: var(--thumb-box-shadow);
       cursor: pointer;
       border: none;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Hover/Focus/Active states for Thumb */
+    input[type='range']:hover::-webkit-slider-thumb,
+    input[type='range']:focus::-webkit-slider-thumb {
+        transform: scale(1.1); /* Grow thumb */
+        box-shadow: 0 0 0 6px rgba(82, 0, 255, 0.15), /* Halo effect (using --thumb-bg color) */
+                    var(--thumb-box-shadow);
+    }
+    input[type='range']:hover::-moz-range-thumb,
+    input[type='range']:focus::-moz-range-thumb {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 6px rgba(82, 0, 255, 0.15),
+                    var(--thumb-box-shadow);
+    }
+    input[type='range']:active::-webkit-slider-thumb,
+    input[type='range']:active::-moz-range-thumb {
+        transform: scale(1.2); /* Larger on active drag */
+        box-shadow: 0 0 0 10px rgba(82, 0, 255, 0.25), /* Stronger halo */
+                    0 2px 4px rgba(0,0,0,0.5); /* Stronger base shadow */
     }
     input[type='number'],
     input[type='text'],
     select {
-      background-color: #2a2a2a;
+      /* MD3 Inspired Styling */
+      background-color: rgba(255, 255, 255, 0.08); /* Slightly more opaque base */
       color: #eee;
-      border: 1px solid #666;
-      border-radius: 3px;
-      padding: 0.4vmin;
+      border: 1.5px solid rgba(255, 255, 255, 0.2); /* Softer initial border */
+      border-radius: 5px; /* justine custom rounding */
+      padding: 0.8vmin 1.2vmin; /* More spacious padding */
       font-size: 1.5vmin;
       font-family: inherit;
       box-sizing: border-box;
+      min-height: 3.8vmin; /* Consistent height */
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      appearance: none; /* Remove default styling for custom look */
+      -webkit-appearance: none;
+      -moz-appearance: none;
     }
     input[type='number'] {
       width: 6em;
     }
     input[type='text'] {
       width: 100%;
+      /* For browsers that support -moz-appearance: textfield for number inputs */
+      -moz-appearance: textfield;
     }
     input[type='text']::placeholder {
       color: #888;
     }
+
+    input[type='number']:hover,
+    input[type='text']:hover,
+    select:hover {
+      background-color: rgba(255, 255, 255, 0.12); /* Lighten on hover */
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
     input[type='number']:focus,
-    input[type='text']:focus {
+    input[type='text']:focus,
+    select:focus {
       outline: none;
-      border-color: #5200ff;
-      box-shadow: 0 0 0 2px rgba(82, 0, 255, 0.3);
+      background-color: rgba(255, 255, 255, 0.1); /* Optional: subtle bg change on focus */
+      border: 2px solid var(--thumb-bg); /* Use theme accent color for border */
+      box-shadow: 0 0 0 3px rgba(82, 0, 255, 0.25); /* MD3 style focus ring/glow */
+      /* Adjust padding to maintain consistent inner size due to border change */
+      padding: calc(0.8vmin - 0.5px) calc(1.2vmin - 0.5px);
     }
     select {
       width: 100%;
-    }
-    select:focus {
-      outline: none;
-      border-color: #5200ff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23eeeeee'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1vmin center;
+      background-size: 1.5vmin;
+      padding-right: 3.5vmin; /* Space for the arrow, adjust padding calc if needed */
     }
     select option {
-      background-color: #2a2a2a;
+      background-color: #3a3a3a; /* Options typically not translucent for readability */
       color: #eee;
     }
     .checkbox-setting {
@@ -846,14 +972,28 @@ class SettingsController extends LitElement {
     }
     input[type='checkbox'] {
       cursor: pointer;
-      accent-color: #5200ff;
+      accent-color: var(--thumb-bg); /* Use theme accent color */
+      width: 1.8vmin; /* MD3 standard size */
+      height: 1.8vmin;
+      margin-right: 0.8vmin; /* More space next to label */
+      vertical-align: middle; /* Better alignment with text */
+    }
+    .checkbox-setting label {
+        display: inline-flex; /* Helps align checkbox and text */
+        align-items: center;
+        cursor: pointer; /* Make the label clickable for the checkbox */
+        transition: color 0.2s ease;
+    }
+    .checkbox-setting label:hover {
+        color: #fff; /* Slightly brighten label text on hover */
     }
     .core-settings-row {
       display: flex;
       flex-direction: row;
       flex-wrap: wrap;
-      gap: 4vmin;
-      margin-bottom: 1vmin;
+      gap: 4vmin; /* Gap between items within the core settings row */
+      margin-bottom: 1vmin; /* Default bottom margin for the core settings row */
+      transition: margin-bottom 0.3s ease-out; /* Smooth transition for margin changes */
       justify-content: space-evenly;
     }
     .core-settings-row .setting {
@@ -870,35 +1010,41 @@ class SettingsController extends LitElement {
       user-select: none;
       font-size: 1.4vmin;
       width: fit-content;
+      transition: margin 0.3s ease-out; /* Smooth transition for margin changes */
     }
     .advanced-toggle:hover {
       color: #eee;
     }
     .advanced-settings {
-      display: grid;
+      display: none; /* Hidden by default */
       grid-template-columns: repeat(auto-fit, minmax(10vmin, 1fr));
-      gap: 3vmin;
-      overflow: hidden;
-      max-height: 0;
-      opacity: 0;
-      transition:
-        max-height 0.3s ease-out,
-        opacity 0.3s ease-out;
+      overflow: hidden; /* Still useful for content clipping when visible */
+      /* Transitions removed */
     }
     .advanced-settings.visible {
-      max-width: 120vmin;
-      max-height: 40vmin;
+      display: grid; /* Become a grid when visible */
+      grid-template-rows: 1fr;
+      gap: 3vmin;
       opacity: 1;
+      pointer-events: auto;
     }
     hr.divider {
-      display: none;
+      display: none; /* Hidden by default */
       border: none;
-      border-top: 1px solid #666;
-      margin: 2vmin 0;
+      border-top: 1px solid rgba(255,255,255,0.2); /* Softer, MD3-style divider */
       width: 100%;
+      /* Transitions and related properties removed */
     }
     :host([showadvanced]) hr.divider {
-      display: block;
+      display: block; /* Show when advanced settings are active */
+      margin: 2vmin 0; /* Restore original margins */
+    }
+    :host(:not([showadvanced])) .core-settings-row {
+      margin-bottom: 0.25vmin; /* Drastically reduce bottom margin when advanced settings are hidden */
+    }
+    :host(:not([showadvanced])) .advanced-toggle {
+      margin-top: 0.25vmin; /* Minimal top margin when collapsed */
+      margin-bottom: 0.25vmin; /* Minimal bottom margin when collapsed */
     }
     .auto-row {
       display: flex;
@@ -918,6 +1064,71 @@ class SettingsController extends LitElement {
     .auto-row input[type='checkbox'] {
       cursor: pointer;
       margin: 0;
+    }
+
+    /* Apply clamp to font sizes for better responsiveness */
+    :host { font-size: clamp(13px, 1.5vmin, 16px); }
+    label { font-size: clamp(12px, 1.5vmin, 15px); }
+    label span:last-child { font-size: clamp(11px, 1.4vmin, 14px); }
+    input[type='number'], input[type='text'], select { font-size: clamp(12px, 1.5vmin, 15px); }
+    .advanced-toggle { font-size: clamp(11px, 1.4vmin, 14px); }
+
+    @media (max-width: 600px) and (orientation: portrait) {
+      :host {
+        padding: 1vmin; /* Reduced padding */
+        /* font-size clamp is already applied above, can adjust if needed for mobile specifically */
+      }
+
+      :host([showadvanced]) {
+        max-height: 45vh; /* Further reduced max-height for advanced settings on mobile */
+      }
+
+      .core-settings-row {
+        gap: 1.5vmin; /* Further reduced gap */
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .core-settings-row .setting {
+        min-width: unset;
+        width: 100%;
+      }
+
+      .advanced-toggle {
+        /* font-size clamp applied above */
+        margin: 1.2vmin auto; /* Reduced margin, centered */
+      }
+      :host(:not([showadvanced])) .advanced-toggle {
+        margin-top: 0.5vmin;
+        margin-bottom: 0.5vmin;
+      }
+
+      .advanced-settings.visible {
+        grid-template-columns: 1fr; /* Single column */
+        gap: 1vmin; /* Further reduced gap */
+      }
+      .advanced-settings .setting {
+         width: 100%;
+      }
+
+      input[type='range'] {
+        --track-height: 10px; /* Adjusted fatter track for mobile */
+        --track-border-radius: 5px; /* Pill shape for mobile track */
+        --thumb-size: 20px; /* Adjusted larger thumb for mobile */
+        --thumb-border-radius: 6px; /* Rounded rectangle thumb for mobile */
+      }
+
+      input[type='number'],
+      input[type='text'],
+      select {
+        /* font-size clamp applied above */
+        padding: 1vmin 1.3vmin; /* Reduced padding */
+        min-height: 4.8vmin; /* Slightly reduced min-height */
+      }
+      input[type='number'] { width: 100%; }
+      select { background-size: 2vmin; padding-right: 4.5vmin; }
+
+      input[type='checkbox'] { width: 2.3vmin; height: 2.3vmin; } /* Slightly reduced size */
+      .checkbox-setting label { /* font-size clamp applied via general label style */ }
     }
   `;
 
@@ -1234,16 +1445,27 @@ class PromptDj extends LitElement {
       justify-content: center;
       align-items: center;
       box-sizing: border-box;
+      /* background-color removed, #background will handle it */
       padding: 2vmin;
       position: relative;
-      font-size: 1.8vmin;
+      font-family: 'Google Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    @keyframes rotateBackground {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
     #background {
       position: absolute;
       height: 100%;
       width: 100%;
       z-index: -1;
-      background: #111;
+      background-color: #111; /* Base dark color */
+      /* animation: rotateBackground 120s linear infinite; - Rotation removed */
+      transform-origin: center center; /* Ensure rotation is around the center */
     }
     .prompts-area {
       display: flex;
@@ -1304,6 +1526,15 @@ class PromptDj extends LitElement {
       align-items: center;
       flex-shrink: 0;
     }
+    .footer-container {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5vmin; /* Space between GitHub link and AI Studio credit */
+      padding: 1vmin 0;
+      flex-shrink: 0;
+    }
     play-pause-button,
     add-prompt-button,
     reset-button {
@@ -1316,6 +1547,88 @@ class PromptDj extends LitElement {
       min-width: 14vmin;
       max-width: 16vmin;
       flex: 1;
+    }
+    .github-link {
+      display: inline-flex; /* For aligning icon and text */
+      align-items: center;
+      gap: 0.5vmin; /* Space between icon and text */
+      font-family: 'Google Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; /* Added sans-serif font stack */
+      font-size: 1.8vmin; /* Increased font size */
+      color: #777;
+      text-decoration: none;
+    }
+    .github-link:hover {
+      color: #aaa;
+    }
+    .github-link svg {
+      width: 2vmin; /* Adjusted icon size */
+      height: 2vmin;
+      fill: currentColor; /* Icon color matches text color */
+      vertical-align: middle; /* Helps with alignment */
+    }
+    .ai-studio-credit {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5vmin;
+      font-size: 1.8vmin;
+      font-family: 'Google Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; /* Added sans-serif font stack */
+      color: #777;
+      text-decoration: none; /* Style as a link */
+    }
+    .footer-separator {
+      color: #777;
+      font-size: 1.8vmin;
+      font-family: 'Google Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      user-select: none; /* Prevent selecting the separator */
+    }
+    .ai-studio-credit:hover {
+      color: #aaa; /* Hover effect like GitHub link */
+    }
+
+    @media (max-width: 600px) and (orientation: portrait) {
+      :host {
+        padding: 1vmin; /* Reduced padding */
+        /* Prevent potential scrollbars if any large scaled element tries to break bounds */
+        overflow: hidden; 
+      }
+      #background {
+        background-image: none !important; /* Remove complex radial gradients on mobile */
+      }
+      .prompts-area {
+        margin-top: 1vmin; /* Reduced margin */
+        gap: 1vmin; /* Reduce gap between prompts-container and add-button */
+        flex: 2; /* Significantly reduced flex to make prompts area more compact */
+      }
+      #prompts-container {
+        margin-left: 1vmin; /* Drastically reduce left margin */
+        padding: 0.5vmin; /* Reduced padding */
+        gap: 1vmin; /* Reduced gap between prompt-controllers */
+      }
+      prompt-controller {
+        min-width: 20vmin; /* Wider for better touch/text */
+        max-width: 24vmin;
+        max-height: 30vmin; /* Further reduced max height for more compactness */
+      }
+      play-pause-button,
+      add-prompt-button,
+      reset-button {
+        width: 16vmin; /* Adjusted for touch, still compact */
+      }
+      .footer-container {
+        gap: 1vmin; /* Reduced gap */
+        padding: 0.5vmin 0;
+      }
+      .github-link, .ai-studio-credit, .footer-separator {
+        font-size: clamp(11px, 2.5vmin, 13px); /* Smaller font for footer */
+      }
+      .github-link svg {
+        width: clamp(14px, 2.2vmin, 16px); /* Adjust icon size */
+        height: clamp(14px, 2.2vmin, 16px);
+      }
+      #settings-container {
+        margin: 1vmin 0; /* Reduced margin */
+        flex: 1.5; /* Adjusted from 1, to give settings a bit more relative space */
+      }
     }
   `;
 
@@ -1662,7 +1975,20 @@ class PromptDj extends LitElement {
           .playbackState=${this.playbackState}></play-pause-button>
         <reset-button @click=${this.handleReset}></reset-button>
       </div>
-      <toast-message></toast-message>`;
+      <div class="footer-container">
+        <a class="github-link" href="https://github.com/justinecabel" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 16 16" version="1.1" aria-hidden="true">
+            <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          Justine
+        </a>
+        <span class="footer-separator">|</span>
+        <a class="ai-studio-credit" href="https://aistudio.google.com/apps/bundled/promptdj?showPreview=true" target="_blank" rel="noopener noreferrer">
+          From Google AI Studio
+        </a>
+      </div>
+      <toast-message></toast-message>
+      `;
   }
 
   private renderPrompts() {
